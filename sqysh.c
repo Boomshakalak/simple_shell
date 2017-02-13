@@ -292,6 +292,7 @@ void sqysh_loop(int argc, char **argv)
   char *line;
   char **args;
   int status;
+  int fd;
   process * header;
   process ** head = &header;
 	if(argc < 2 && isatty(fileno(stdin))){
@@ -306,19 +307,20 @@ void sqysh_loop(int argc, char **argv)
   		} while (status);
 	}else
   {
-      close(fileno(stdin));
-      if ((open(*(++argv), O_RDONLY, 0666)) == -1){
-        perror("invalid file!\n");
-        return;
+      if ((fd = open(*(++argv), O_RDONLY, 0666)) == -1){
+        sqysh_exec(++argv,NULL);
       }
-      do {
-            checkBackground(head);
-            line = sqysh_read_line();
-            args = sqysh_split_line(line);
-            status = sqysh_exec(args,head);
-            free(line);
-            free(args);
-      } while (end!=1);
+      else 
+        {
+                dup2(fd,fileno(stdin));
+                do {
+                    checkBackground(head);
+                    line = sqysh_read_line();
+                    args = sqysh_split_line(line);
+                    status = sqysh_exec(args,head);
+                    free(line);
+                    free(args);
+              } while (end!=1);}
   }
 
 }
