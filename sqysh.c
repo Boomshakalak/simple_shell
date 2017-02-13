@@ -308,7 +308,7 @@ void sqysh_loop(int argc, char **argv)
 	}else
   {
       if ((fd = open(*(++argv), O_RDONLY, 0666)) == -1){
-        sqysh_exec(++argv,NULL);
+        sqysh_exec(argv,NULL);
       }
       else 
         {
@@ -320,7 +320,9 @@ void sqysh_loop(int argc, char **argv)
                     status = sqysh_exec(args,head);
                     free(line);
                     free(args);
-              } while (end!=1);}
+              } while (end!=1);
+              close(fd);
+            }
   }
 
 }
