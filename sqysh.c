@@ -133,7 +133,7 @@ int sqysh_exit(char **args)
   @param args Null terminated list of arguments (including program).
   @return Always returns 1, to continue execution.
  */
-int sqysh_launch(char **args,process ** backgroud_header)
+int sqysh_launch(char **args,process ** background_header)
 {
   pid_t pid;
   int status;
@@ -142,11 +142,11 @@ int sqysh_launch(char **args,process ** backgroud_header)
   for (j = 0 ;args[j] != NULL; j++){
     if (strcmp(args[j],"&") == 0){
       b_flag = 1;
+      args[j] = NULL;
       break;
     }
   }
   pid = fork();
-
   if (pid == 0) {
     // Child process
     char * finalargs[128];
@@ -166,13 +166,6 @@ int sqysh_launch(char **args,process ** backgroud_header)
         finalargs[position++] = args[i];
     }
       finalargs[position] = NULL;
-  if (strcmp(args[position-1],"&") == 0) {
-    finalargs[position-1] = NULL;
-    /* add this to to list of background program*/
-    
-  }
-  else
-    finalargs[position] = NULL;
     if (execvp(finalargs[0], finalargs) == -1) {
       perror("sqysh");
     }
@@ -183,8 +176,9 @@ int sqysh_launch(char **args,process ** backgroud_header)
   } else {
     	if (b_flag == 0 )
     		waitpid(pid,&status,WUNTRACED);
-      if (b_flag == 1)
-          addToBegin(backgroud_header,pid,args[0]); 
+	else
+	 addToBegin(background_header, pid, args[0]);
+
   }
   return 1;
 }
@@ -194,7 +188,7 @@ int sqysh_launch(char **args,process ** backgroud_header)
    @param args Null terminated list of arguments.
    @return 1 if the shell should continue running, 0 if it should terminate
  */
-int sqysh_exec(char **args, process ** backgroud_header)
+int sqysh_exec(char **args, process ** background_header)
 {
   int i;
 
@@ -209,7 +203,7 @@ int sqysh_exec(char **args, process ** backgroud_header)
 
   }
 
-  return sqysh_launch(args,backgroud_header);
+  return sqysh_launch(args,background_header);
 }
 
 #define sqysh_RL_BUFSIZE 1024
@@ -252,8 +246,7 @@ char *sqysh_read_line(void)
   }
 }
 
-#define sqysh_TOK_BUFSIZE 64
-#define sqysh_TOK_DELIM " \t\r\n\a"
+#define TOK_DELIM " \t\r\n\a"
 /**
    @brief Split a line into tokens .
    @param line The line.
@@ -261,7 +254,7 @@ char *sqysh_read_line(void)
  */
 char **sqysh_split_line(char *line)
 {
-  int bufsize = sqysh_TOK_BUFSIZE, position = 0;
+  int bufsize = 64, position = 0;
   char **tokens = malloc(bufsize * sizeof(char*));
   char *token;
   if (!tokens) {
@@ -269,12 +262,12 @@ char **sqysh_split_line(char *line)
     exit(EXIT_FAILURE);
   }
 
-  token = strtok(line, sqysh_TOK_DELIM);
+  token = strtok(line, TOK_DELIM);
   while (token != NULL) { 	
     	tokens[position] = token;
     	position++;
     if (position >= bufsize) {
-      bufsize += sqysh_TOK_BUFSIZE;
+      bufsize += 64;
       tokens = realloc(tokens, bufsize * sizeof(char*));
       if (!tokens) {
         fprintf(stderr, "sqysh: allocation error\n");
@@ -282,7 +275,7 @@ char **sqysh_split_line(char *line)
       }
     }
 
-    token = strtok(NULL, sqysh_TOK_DELIM);
+    token = strtok(NULL, TOK_DELIM);
   }
   tokens[position] = NULL;
   return tokens;
@@ -301,10 +294,10 @@ void sqysh_loop(int argc, char **argv)
   process ** head = &header;
 	if(argc < 2 && isatty(fileno(stdin))){
   		do {
-        checkBackground(head);
-   			printf("sqysh$ ");
-    		line = sqysh_read_line();
-    		args = sqysh_split_line(line);
+		        printf("sqysh$ ");
+		        checkBackground(head);
+			line = sqysh_read_line();
+			args = sqysh_split_line(line);
    		 	status = sqysh_exec(args,head);
    		 	free(line);
   	 	 	free(args);
