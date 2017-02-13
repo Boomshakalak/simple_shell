@@ -13,6 +13,7 @@
 int sqysh_cd(char **args);
 int sqysh_exit(char **args);
 int b_count = 0;
+int end = 0 ; 
 /*
   Linklist to hold the backgroud process.
  */
@@ -228,6 +229,7 @@ char *sqysh_read_line(void)
 
     if (c == EOF || c == '\n') {
       buffer[position] = '\0';
+      if (c == EOF) end = 1;
       return buffer;
     } else {
       buffer[position] = c;
@@ -296,14 +298,28 @@ void sqysh_loop(int argc, char **argv)
   		do {
 		        printf("sqysh$ ");
 		        checkBackground(head);
-			line = sqysh_read_line();
-			args = sqysh_split_line(line);
-   		 	status = sqysh_exec(args,head);
-   		 	free(line);
-  	 	 	free(args);
+			      line = sqysh_read_line();
+			      args = sqysh_split_line(line);
+   		 	    status = sqysh_exec(args,head);
+   		 	    free(line);
+  	 	 	    free(args);
   		} while (status);
 	}else
-   		 status = sqysh_exec(++argv,NULL);
+  {
+      close(fileno(stdin));
+      if ((open(*(++argv), O_RDONLY, 0666)) == -1){
+        perror("invalid file!\n");
+        return;
+      }
+      do {
+            checkBackground(head);
+            line = sqysh_read_line();
+            args = sqysh_split_line(line);
+            status = sqysh_exec(args,head);
+            free(line);
+            free(args);
+      } while (end!=1);
+  }
 
 }
 
