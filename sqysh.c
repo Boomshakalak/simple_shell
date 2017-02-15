@@ -253,7 +253,7 @@ char **sqysh_split_line(char *line)
 /**
    @brief Loop getting input and executing it.
  */
-void sqysh_loop(int argc, char **argv)
+void sqysh_loop()
 {
   char **args;
   int status;
@@ -299,7 +299,7 @@ int main(int argc, char ** argv)
           exec = 1;
       } 
       if ((exec == 1) || argc >2 ) sqysh_exec(++argv,NULL);       
-    sqysh_loop(argc,argv);
+    sqysh_loop();
   if (fp!=NULL) fclose(fp);
   return 0;
 }
