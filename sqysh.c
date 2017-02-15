@@ -13,7 +13,8 @@
 int sqysh_cd(char **args);
 int sqysh_exit(char **args);
 int b_count = 0;
-int end = 0 ; 
+int end = 0 ;
+char str[128];
 /*
   Linklist to hold the backgroud process.
  */
@@ -212,41 +213,6 @@ int sqysh_exec(char **args, process ** background_header)
    @brief Read a line of input from stdin.
    @return The line from stdin.
  */
-char *sqysh_read_line(void)
-{
-  int bufsize = sqysh_RL_BUFSIZE;
-  int position = 0;
-  char *buffer = malloc(sizeof(char) * bufsize);
-  int c;
-
-  if (!buffer) {
-    fprintf(stderr, "sqysh: allocation error\n");
-    exit(EXIT_FAILURE);
-  }
-
-  while (1) {
-    c = getchar();
-
-    if (c == EOF || c == '\n') {
-      buffer[position] = '\0';
-      if (c == EOF) end = 1;
-      return buffer;
-    } else {
-      buffer[position] = c;
-    }
-    position++;
-
-    // If we have exceeded the buffer, reallocate.
-    if (position >= bufsize) {
-      bufsize += sqysh_RL_BUFSIZE;
-      buffer = realloc(buffer, bufsize);
-      if (!buffer) {
-        fprintf(stderr, "sqysh: allocation error\n");
-        exit(EXIT_FAILURE);
-      }
-    }
-  }
-}
 
 #define TOK_DELIM " \t\r\n\a"
 /**
@@ -289,43 +255,32 @@ char **sqysh_split_line(char *line)
  */
 void sqysh_loop(int argc, char **argv)
 {
-  char *line;
   char **args;
   int status;
-  int fd;
   process * header;
   process ** head = &header;
-	if(argc < 2 && isatty(fileno(stdin))){
   		do {
-		        printf("sqysh$ ");
+		        if (isatty(0)) printf("sqysh$ ");
 		        checkBackground(head);
-			      line = sqysh_read_line();
-			      args = sqysh_split_line(line);
+			      if (fgets(str,1024,stdin)== NULL) exit(EXIT_FAILURE);
+			      args = sqysh_split_line(str);
    		 	    status = sqysh_exec(args,head);
-   		 	    free(line);
   	 	 	    free(args);
   		} while (status);
-	}else
-  {
-      if ((fd = open(*(++argv), O_RDONLY, 0666)) == -1){
-        sqysh_exec(argv,NULL);
-      }
-      else 
-        {
-                dup2(fd,fileno(stdin));
-                do {
-                    checkBackground(head);
-                    line = sqysh_read_line();
-                    args = sqysh_split_line(line);
-                    status = sqysh_exec(args,head);
-                    free(line);
-                    free(args);
-              } while (end!=1);
-              close(fd);
-            }
+	// }else
+       
+ //                do {
+ //                    checkBackground(head);
+ //                    if (fgets(str,1024,stdin)== NULL) exit(EXIT_FAILURE);
+ //                    args = sqysh_split_line(str);
+ //                    status = sqysh_exec(args,head);
+ //                    free(args);
+ //              } while (status);
+      
   }
+   
 
-}
+
 
 /**
    @brief Main entry point.
@@ -333,9 +288,18 @@ void sqysh_loop(int argc, char **argv)
    @param argv Argument vector.
    @return status code
  */
-int main(int argc, char **argv)
-{
-
-  sqysh_loop(argc,argv);
-  return EXIT_SUCCESS;
+int main(int argc, char ** argv)
+{   
+    int exec = 0;
+    FILE* fp = NULL;
+   if (argc == 2){ 
+      if ((fp = fopen(argv[1],"r")) != NULL)
+          dup2(fileno(fp),fileno(stdin));
+        else
+          exec = 1;
+      } 
+      if ((exec == 1) || argc >2 ) sqysh_exec(++argv,NULL);       
+    sqysh_loop(argc,argv);
+  if (fp!=NULL) fclose(fp);
+  return 0;
 }
