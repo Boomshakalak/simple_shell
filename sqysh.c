@@ -264,15 +264,6 @@ void sqysh_loop()
    		 	    status = sqysh_exec(args,head);
   	 	 	    free(args);
   		} while (status);
-	// }else
-       
- //                do {
- //                    checkBackground(head);
- //                    if (fgets(str,1024,stdin)== NULL) exit(EXIT_FAILURE);
- //                    args = sqysh_split_line(str);
- //                    status = sqysh_exec(args,head);
- //                    free(args);
- //              } while (status);
       
   }
    
@@ -287,15 +278,15 @@ void sqysh_loop()
  */
 int main(int argc, char ** argv)
 {   
-    int exec = 0;
     FILE* fp = NULL;
+    if (argc >2) {
+      printf("too many arguments!\n");
+      return 0;
+    }
    if (argc == 2){ 
       if ((fp = fopen(argv[1],"r")) != NULL)
           dup2(fileno(fp),fileno(stdin));
-        else
-          exec = 1;
-      } 
-      if ((exec == 1) || argc >2 ) sqysh_exec(++argv,NULL);       
+      }        
     sqysh_loop();
   if (fp!=NULL) fclose(fp);
   return 0;
