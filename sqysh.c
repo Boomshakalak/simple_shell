@@ -151,15 +151,18 @@ int sqysh_launch(char **args,process ** background_header)
   if (pid == 0) {
     // Child process
     char * finalargs[1024];
+    finalargs[0] = NULL;
     int i;
     int position = 0;
     for (i = 0 ; args[i]!= NULL ; ++i){
       if (strcmp(args[i],">") == 0){
+        if (finalargs[0] == NULL) exit(EXIT_FAILURE);
         close(fileno(stdout));
         if ((open(args[++i], O_WRONLY | O_CREAT | O_TRUNC, 0666)) == -1)
           perror("unable to allocate an outputfile!\n");
       }
       else if (strcmp(args[i],"<") == 0){
+        if (finalargs[0] == NULL) exit(EXIT_FAILURE);
         close(fileno(stdin));
         if ((open(args[++i], O_RDONLY, 0666)) == -1)perror("unable to read from an inputfile!\n");
       }
