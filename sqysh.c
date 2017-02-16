@@ -13,7 +13,6 @@
 int sqysh_cd(char **args);
 int sqysh_exit(char **args);
 int b_count = 0;
-int end = 0 ;
 char str[128];
 /*
   Linklist to hold the backgroud process.
@@ -21,7 +20,7 @@ char str[128];
 typedef struct proc
 {
   int pid;
-  char cmd[64];
+  char cmd[1024];
   struct proc * next;  
 }process;
 
@@ -107,7 +106,7 @@ int sqysh_cd(char **args)
   int size;
   for (size = 0; args[size] != NULL; size++);
   if (size>2){
-  	fprintf(stderr, "sqysh: too many arguments to \"cd\"\n");
+  	fprintf(stderr, "cd: too many arguments\n");
   	return 1;
   }
   else if (args[1] == NULL) {
@@ -151,7 +150,7 @@ int sqysh_launch(char **args,process ** background_header)
   pid = fork();
   if (pid == 0) {
     // Child process
-    char * finalargs[128];
+    char * finalargs[1024];
     int i;
     int position = 0;
     for (i = 0 ; args[i]!= NULL ; ++i){
@@ -169,7 +168,7 @@ int sqysh_launch(char **args,process ** background_header)
     }
       finalargs[position] = NULL;
     if (execvp(finalargs[0], finalargs) == -1) {
-      perror("sqysh");
+      fprintf(stderr, "%s: %s\n", finalargs[0], strerror(errno));
     }
     exit(EXIT_FAILURE);
   } else if (pid < 0) {
@@ -208,11 +207,6 @@ int sqysh_exec(char **args, process ** background_header)
   return sqysh_launch(args,background_header);
 }
 
-#define sqysh_RL_BUFSIZE 1024
-/**
-   @brief Read a line of input from stdin.
-   @return The line from stdin.
- */
 
 #define TOK_DELIM " \t\r\n\a"
 /**
